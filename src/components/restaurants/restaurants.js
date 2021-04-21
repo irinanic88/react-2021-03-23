@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import Restaurant from '../restaurant';
+import { Redirect, Route, Switch, useRouteMatch } from 'react-router';
 import Tabs from '../tabs';
+import Restaurant from '../restaurant';
 import Loader from '../loader';
 import {
   restaurantsListSelector,
@@ -12,25 +13,30 @@ import {
 import { loadRestaurants } from '../../redux/actions';
 
 const Restaurants = ({ restaurants, loading, loaded, loadRestaurants }) => {
-  const [activeRestaurantId, setActiveRestaurant] = useState(
-    restaurants[0]?.id
-  );
-
-  const activeId = activeRestaurantId || restaurants[0]?.id;
-
   useEffect(() => {
     if (!loading && !loaded) loadRestaurants();
   }, [loadRestaurants, loading, loaded]);
 
+  const match = useRouteMatch('/restaurants/:restId/:tabId');
+  const tabId = match?.params.tabId || 'menu';
+
   if (loading) return <Loader />;
   if (!loaded) return 'No data :(';
 
-  const tabs = restaurants.map(({ id, name }) => ({ id, title: name }));
+  const tabs = restaurants.map(({ id, name }) => ({
+    title: name,
+    to: `/restaurants/${id}/${tabId}`,
+  }));
 
   return (
     <div>
-      <Tabs tabs={tabs} activeId={activeId} onChange={setActiveRestaurant} />
-      <Restaurant id={activeId} />
+      <Tabs tabs={tabs} />
+      <Switch>
+        <Route path="/restaurants/:restId">
+          {({ match }) => <Restaurant id={match.params.restId} />}
+        </Route>
+        <Redirect to={`/restaurants/${restaurants[0].id}`} />;
+      </Switch>
     </div>
   );
 };
